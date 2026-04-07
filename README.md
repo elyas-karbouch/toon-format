@@ -1,209 +1,135 @@
-# TOON Format
+# TOON Format — Cut LLM Token Costs by 60%
 
+**Token-Oriented Object Notation** is a data serialisation format built for one job: sending structured data to language models without wasting tokens on syntax your LLM doesn't need.
 
+JSON wraps every key in quotes, separates every value with commas, and nests everything in braces. Your model predicts through all of it — one expensive token at a time. TOON eliminates that overhead while preserving every data point and every structural relationship.
 
-**TOON** (Token-Oriented Object Notation) is a compact format for sending structured data to LLMs. It cuts token usage by **30–60%** compared to JSON.
+**30–60% fewer tokens. Same data. Same accuracy. Lower cost.**
 
+---
 
+## Quick Comparison
 
-## The Problem
-
-
-
-JSON is verbose. Every key name, quote, and bracket becomes a token your LLM must process:
-
-
+**JSON** (37 syntax tokens wasted):
 
 ```json
-
 {
-
-  "users": [
-
-    {"id": 1, "name": "Alice", "role": "admin"},
-
-    {"id": 2, "name": "Bob", "role": "user"}
-
-  ]
-
+  "user": {
+    "id": "usr_8821",
+    "name": "Alice Chen",
+    "role": "Compliance Officer",
+    "department": "Legal",
+    "permissions": ["read", "audit", "approve"],
+    "active": true
+  }
 }
-
 ```
 
-
-
-## The Solution
-
-
-
-TOON declares fields once, then just sends data:
-
-
+**TOON** (zero syntax overhead):
 
 ```
-
-users[2]{id,name,role}:
-
-1,Alice,admin
-
-2,Bob,user
-
+user:
+    id: usr_8821
+    name: Alice Chen
+    role: Compliance Officer
+    department: Legal
+    permissions:
+        - read
+        - audit
+        - approve
+    active: true
 ```
 
-
-
-**Same data. 40% fewer tokens. Lower cost.**
-
-
+Every piece of data preserved. Every hierarchy preserved. Tabs and line breaks carry the structure instead of braces, quotes, and commas.
 
 ---
 
+## Why This Matters
 
+LLM pricing is per token. In RAG pipelines, the dominant cost is not the user query — it is the retrieved context injected into every prompt. Syntax tokens add nothing to the model's ability to answer. They just cost money.
 
-## Quick Math
+| Metric | JSON | TOON | Saving |
+| --- | --- | --- | --- |
+| Tokens per 4K context block | 4,000 | 2,400 | 40% |
+| Daily cost (10K queries, $10/1M tokens) | $400 | $240 | $160/day |
+| Monthly cost | $12,000 | $7,200 | **$4,800/mo** |
+| Annual cost | $144,000 | $86,400 | **$57,600/yr** |
 
-
-
-For 10,000 LLM queries per day with 4,000 tokens of context:
-
-
-
-| Format | Daily Cost | Annual Cost |
-
-|--------|-----------|-------------|
-
-| JSON   | $400      | $120,000   |
-
-| TOON   | $240      | $72,000    |
-
-| **Save** | **$160** | **$48,000** |
-
-
+Beyond cost, fewer tokens means more room in the context window. A 40% reduction lets you fit **67% more actual content** into the same window — more retrieved sections, longer documents, richer metadata. In retrieval-augmented systems where accuracy depends on context completeness, that is a capability unlock.
 
 ---
 
+## Resources
 
-
-## Try It Now
-
-
-
-👉 **[toonformat.dev/playground](https://toonformat.dev/playground)**
-
-
-
-Paste any JSON, see TOON format. No signup, no setup.
-
-
+| Resource | Link | Description |
+| --- | --- | --- |
+| TOON Specification | [github.com/toon-format/toon](https://github.com/toon-format/toon) | Official format spec, grammar, and reference parser |
+| TOON Converter | [toonconverter.org](https://toonconverter.org/) | Convert JSON ↔ TOON instantly in the browser |
 
 ---
 
+## When to Use TOON
 
+**Use TOON when** structured data enters or exits a language model:
 
-## Use in Code
+- RAG context injection — serialise retrieved documents as TOON before prompting
+- Tool/function call outputs — return structured results in TOON
+- Agent memory — store and recall state with minimal token footprint
+- Batch processing — reduce cost across thousands of daily LLM calls
 
+**Keep using JSON for** REST APIs, database storage, configuration files, and browser communication. TOON sits at the LLM interface layer — the last mile before data becomes part of a prompt.
 
+---
 
-### Python
+## Integration Examples
 
-```bash
+TOON works with any LLM pipeline. Two integrations covered in depth in the companion article:
 
-pip install python-toon
+1. **Docling → TOON** — Convert document parsing output to TOON before injection
+2. **PageIndex → TOON** — Serialise index tree structures in TOON for hierarchical RAG
+
+Full code samples, benchmarks, and production-ready implementations are in this repository.
+
+---
+
+## The Maths
+
+The formula is simple:
 
 ```
-
-```python
-
-from toon import encode
-
-
-
-data = [
-
-    {"id": 1, "name": "Alice"},
-
-    {"id": 2, "name": "Bob"},
-
-]
-
-toon_str = encode(data)
-
-print(toon_str)
-
-# [2]{id,name}:
-
-# 1,Alice
-
-# 2,Bob
-
+Annual savings = queries/day × tokens/query × syntax_ratio × price/token × 365
 ```
 
+At 40% syntax ratio and $10/1M tokens:
 
+- **10K queries/day** → saves $57,600/year
+- **100K queries/day** → saves $576,000/year
 
-### JavaScript
-
-```bash
-
-npm install toon
-
-```
-
-```javascript
-
-import { encode } from 'toon';
-
-
-
-const toonStr = encode(data);
-
-console.log(toonStr);
-
-```
-
-
+No model change. No architecture change. No accuracy trade-off. Just fewer wasted tokens.
 
 ---
 
+## Further Reading
 
+This README is a condensed version of the full deep-dive article:
 
-## When to Use
+**[TOON Format: Cut LLM Token Costs by 60%](https://karbouch.substack.com/p/toon-format-token-efficient-serialization)**
 
-
-
-✅ LLM prompts  
-
-✅ Uniform data (users, records, lists)  
-
-✅ Cost-sensitive applications  
-
-
-
-❌ APIs or databases  
-
-❌ Deeply nested structures  
-
-❌ Configuration files
-
-
+Part 3 of the *Verifiable AI Architecture* series — a 16-article technical series covering how to build AI systems that show their work, from document parsing through storage, retrieval, multi-hop reasoning, and citizen-facing verification.
 
 ---
 
+## About
 
+Built by **[Elyas Karbouch](https://karbouch.dev)** — full-stack architect specialising in verifiable AI, data engineering, and compliance systems.
 
-## Links
+*"Build AI that shows its work."*
 
-
-
-- **Playground:** https://toonformat.dev/playground
-
-- **Spec:** https://github.com/toon-format/spec
-
-- **SDKs:** https://github.com/toon-format (TypeScript, Python, Go, Rust, PHP, etc.)
-
-
+- **Substack:** [karbouch.substack.com](https://karbouch.substack.com) — the full Verifiable AI Architecture series
+- **GitHub:** [github.com/elyas-karbouch](https://github.com/elyas-karbouch)
 
 ---
 
+## Licence
 
-
-Made for builders who care about LLM costs and latency.
+MIT
